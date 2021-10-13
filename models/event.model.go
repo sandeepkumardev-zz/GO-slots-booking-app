@@ -1,10 +1,8 @@
 package models
 
-import "time"
-
 type Event struct {
-	EventId  string    `json:"eventid"`
-	DateTime time.Time `json:"datetime"`
-	Duration string    `json:"duration"`
-	TimeZone string    `json:"timezone"`
+	EventId  string `json:"eventid"`
+	DateTime string `json:"datetime"`
+	Duration string `json:"duration"`
+	TimeZone string `json:"timezone"`
 }

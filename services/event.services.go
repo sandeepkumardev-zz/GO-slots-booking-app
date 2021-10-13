@@ -3,15 +3,39 @@ package services
 import (
 	"slot/config"
 	"slot/models"
+	"slot/utils"
 	"strconv"
 	"time"
 
 	"github.com/jinzhu/gorm"
 )
 
-func BookedSlots() (*gorm.DB, string) {
+type Data struct {
+	Date       string
+	Start_Time string
+	End_Time   string
+	TimeZone   string
+}
+
+type AvlSlots struct {
+	Time     string `json:"time"`
+	IsBooked bool   `json:"is_booked"`
+}
+
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
+}
+
+func AvailableSlots(date string, zone string) ([]AvlSlots, string) {
 	var events []*models.Event
-	result := config.DB.Order("date_time desc").Find(&events)
+
+	result := config.DB.Order("event_id desc").Find(&events)
 
 	if result.Error != nil {
 		return nil, "Something went wrong!"
@@ -21,21 +45,92 @@ func BookedSlots() (*gorm.DB, string) {
 		return nil, "No Booked Slots Found!"
 	}
 
-	return result, ""
+	var NewList []AvlSlots
+	var BookedSlot []string
+
+	for _, event := range events {
+		// convert time and date
+		str := "2006-01-02 15:04"
+		dbloc, _ := time.LoadLocation(event.TimeZone)
+		dbTimeZone, _ := time.ParseInLocation(str, event.DateTime, dbloc)
+		userloc, _ := time.LoadLocation(zone)
+		timeFormat := dbTimeZone.In(userloc)
+		cnvtTimeZone := timeFormat.Format(time.RFC3339)
+		newDate, newTime := utils.SplitTime(cnvtTimeZone)
+		// ..
+
+		if newDate == date {
+			for _, slot := range utils.TimeSlots {
+				if slot == newTime {
+					BookedSlot = append(BookedSlot, slot)
+				}
+			}
+		}
+	}
+
+	for _, slot := range utils.TimeSlots {
+		if contains(BookedSlot, slot) {
+			NewList = append(NewList, AvlSlots{slot, true})
+		} else {
+			NewList = append(NewList, AvlSlots{slot, false})
+		}
+	}
+
+	return NewList, ""
 }
 
-type Result struct {
-	message string
-	eventId string
+func BookedSlots(timezone string) ([]Data, string) {
+	var events []*models.Event
+
+	result := config.DB.Order("event_id desc").Find(&events)
+
+	if result.Error != nil {
+		return nil, "Something went wrong!"
+	}
+
+	if result.RowsAffected == 0 {
+		return nil, "No Booked Slots Found!"
+	}
+
+	// new slice for each event
+	var NewList []Data
+
+	for _, event := range events {
+		str := "2006-01-02 15:04"
+
+		dbloc, _ := time.LoadLocation(event.TimeZone)
+		dbTimeZone, _ := time.ParseInLocation(str, event.DateTime, dbloc)
+
+		userloc, _ := time.LoadLocation(timezone)
+		timeFormat := dbTimeZone.In(userloc)
+
+		cnvtTimeZone := timeFormat.Format(time.RFC3339)
+		// duration, _ := strconv.ParseInt(event.Duration, 10, 0)
+		addDurationTimeZone := timeFormat.Add(time.Minute * 30).Format(time.RFC3339)
+
+		date, start_time := utils.SplitTime(cnvtTimeZone)
+		_, end_time := utils.SplitTime(addDurationTimeZone)
+
+		NewList = append(NewList, Data{date, start_time, end_time, timezone})
+	}
+
+	return NewList, ""
 }
 
-func CreateEvent(event *models.Event) (*Result, string) {
+func CreateEvent(event *models.Event) (*models.Result, string) {
 	event.EventId = strconv.FormatInt(int64(time.Now().Nanosecond()), 10)
+
+	//check event exists or not!
+	result := config.DB.Where("date_time = ?", event.DateTime).First(&event)
+	if result.RowsAffected != 0 {
+		return nil, "Event already exists!"
+	}
+
 	if err := config.DB.Create(event).Error; err != nil {
 		return nil, "Event creation failed!"
 	}
 
-	return &Result{message: "Successfully created event.", eventId: event.EventId}, ""
+	return &models.Result{Message: "Successfully created event.", Response: "Event Id: " + event.EventId}, ""
 }
 
 func GetOneEvent(id string) (*gorm.DB, string) {

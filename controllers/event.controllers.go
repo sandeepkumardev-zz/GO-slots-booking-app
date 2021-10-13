@@ -4,25 +4,45 @@ import (
 	"net/http"
 	"slot/models"
 	"slot/services"
+	"slot/utils"
 
 	"github.com/gin-gonic/gin"
 )
 
-func AvailableSlots(ctx *gin.Context) {
-	ctx.JSON(http.StatusOK, "Get available slots")
-}
+type EventController struct{}
 
-func BookedSlots(ctx *gin.Context) {
-	res, err := services.BookedSlots()
+func (EventController) AvailableSlots(ctx *gin.Context) {
+	var Query struct {
+		Date     string `json:"date"`
+		TimeZone string `json:"timezone"`
+	}
+	ctx.ShouldBindJSON(&Query)
+
+	res, err := services.AvailableSlots(Query.Date, Query.TimeZone)
 	if err != "" {
 		ctx.JSON(http.StatusNotFound, err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, res.Value)
+	ctx.JSON(http.StatusOK, res)
 }
 
-func CreateEvent(ctx *gin.Context) {
+func (EventController) BookedSlots(ctx *gin.Context) {
+	var zone struct {
+		TimeZone string `json:"timezone"`
+	}
+	ctx.ShouldBindJSON(&zone)
+
+	res, err := services.BookedSlots(zone.TimeZone)
+	if err != "" {
+		ctx.JSON(http.StatusNotFound, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}
+
+func (EventController) CreateEvent(ctx *gin.Context) {
 	var event models.Event
 
 	if inpErr := ctx.ShouldBind(&event); inpErr != nil {
@@ -30,10 +50,11 @@ func CreateEvent(ctx *gin.Context) {
 		return
 	}
 
-	// if err := utils.CreateValidator(&event); err != "" {
-	// 	ctx.JSON(http.StatusUnprocessableEntity, err)
-	// 	return
-	// }
+	//check duration limit
+	if err := utils.CreateValidator(&event); err != "" {
+		ctx.JSON(http.StatusUnprocessableEntity, err)
+		return
+	}
 
 	res, err := services.CreateEvent(&event)
 	if err != "" {
@@ -44,7 +65,7 @@ func CreateEvent(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, res)
 }
 
-func GetOneEvent(ctx *gin.Context) {
+func (EventController) GetOneEvent(ctx *gin.Context) {
 	id := ctx.Params[0].Value
 
 	res, err := services.GetOneEvent(id)
@@ -56,7 +77,7 @@ func GetOneEvent(ctx *gin.Context) {
 	ctx.JSON(http.StatusAccepted, res.Value)
 }
 
-func UpdateEvent(ctx *gin.Context) {
+func (EventController) UpdateEvent(ctx *gin.Context) {
 	id := ctx.Params[0].Value
 	var event models.Event
 
@@ -75,7 +96,7 @@ func UpdateEvent(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, res)
 }
 
-func DeleteEvent(ctx *gin.Context) {
+func (EventController) DeleteEvent(ctx *gin.Context) {
 	id := ctx.Params[0].Value
 	var event models.Event
 

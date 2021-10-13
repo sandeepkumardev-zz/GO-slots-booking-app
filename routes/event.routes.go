@@ -14,12 +14,12 @@ func RouterSetup() *gin.Engine {
 		ctx.JSON(http.StatusOK, "Events booking app!")
 	})
 
-	router.GET("/slots", ctrl.AvailableSlots)
-	router.GET("/events", ctrl.BookedSlots)
-	router.POST("/event", ctrl.CreateEvent)
-	router.GET("/event/:eventId", ctrl.GetOneEvent)
-	router.PUT("/event/:eventId", ctrl.UpdateEvent)
-	router.DELETE("/event/:eventId", ctrl.DeleteEvent)
+	router.GET("/slots", ctrl.EventController{}.AvailableSlots)
+	router.GET("/events", ctrl.EventController{}.BookedSlots)
+	router.POST("/event", ctrl.EventController{}.CreateEvent)
+	router.GET("/event/:eventId", ctrl.EventController{}.GetOneEvent)
+	router.PUT("/event/:eventId", ctrl.EventController{}.UpdateEvent)
+	router.DELETE("/event/:eventId", ctrl.EventController{}.DeleteEvent)
 
 	return router
 }
