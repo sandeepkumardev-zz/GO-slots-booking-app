@@ -32,7 +32,7 @@ func contains(s []string, str string) bool {
 	return false
 }
 
-func AvailableSlots(date string, zone string) ([]AvlSlots, string) {
+func AvailableSlots(date string, timezone string) ([]AvlSlots, string) {
 	var events []*models.Event
 
 	result := config.DB.Order("event_id desc").Find(&events)
@@ -41,23 +41,13 @@ func AvailableSlots(date string, zone string) ([]AvlSlots, string) {
 		return nil, "Something went wrong!"
 	}
 
-	if result.RowsAffected == 0 {
-		return nil, "No Booked Slots Found!"
-	}
-
 	var NewList []AvlSlots
 	var BookedSlot []string
 
 	for _, event := range events {
-		// convert time and date
-		str := "2006-01-02 15:04"
-		dbloc, _ := time.LoadLocation(event.TimeZone)
-		dbTimeZone, _ := time.ParseInLocation(str, event.DateTime, dbloc)
-		userloc, _ := time.LoadLocation(zone)
-		timeFormat := dbTimeZone.In(userloc)
-		cnvtTimeZone := timeFormat.Format(time.RFC3339)
+		// convert time string with user timezone
+		cnvtTimeZone, _ := utils.ConvertTimeString(event, timezone)
 		newDate, newTime := utils.SplitTime(cnvtTimeZone)
-		// ..
 
 		if newDate == date {
 			for _, slot := range utils.TimeSlots {
@@ -96,15 +86,8 @@ func BookedSlots(timezone string) ([]Data, string) {
 	var NewList []Data
 
 	for _, event := range events {
-		str := "2006-01-02 15:04"
-
-		dbloc, _ := time.LoadLocation(event.TimeZone)
-		dbTimeZone, _ := time.ParseInLocation(str, event.DateTime, dbloc)
-
-		userloc, _ := time.LoadLocation(timezone)
-		timeFormat := dbTimeZone.In(userloc)
-
-		cnvtTimeZone := timeFormat.Format(time.RFC3339)
+		// convert time string with user timezone
+		cnvtTimeZone, timeFormat := utils.ConvertTimeString(event, timezone)
 		// duration, _ := strconv.ParseInt(event.Duration, 10, 0)
 		addDurationTimeZone := timeFormat.Add(time.Minute * 30).Format(time.RFC3339)
 
