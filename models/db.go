@@ -11,14 +11,18 @@ import (
 var err error
 
 func ConnectToDb() {
-	config.DB, err = gorm.Open("mysql", config.DbUrl(config.BuildDBConfig()))
+	slotConfig, fileConfig := config.SlotDBConfig()
+
+	config.SlotDB, err = gorm.Open("mysql", config.DbUrl(slotConfig))
+	config.FileDB, err = gorm.Open("mysql", config.DbUrl(fileConfig))
 
 	if err != nil {
 		fmt.Printf("Status: %v\n", err)
 		return
 	}
 
-	config.DB.AutoMigrate(&Event{})
+	config.SlotDB.AutoMigrate(&Event{})
+	config.FileDB.AutoMigrate(&File{})
 
 	fmt.Println("Database connected!")
 }

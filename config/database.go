@@ -6,7 +6,8 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-var DB *gorm.DB
+var SlotDB *gorm.DB
+var FileDB *gorm.DB
 
 type DBConfig struct {
 	Host     string
@@ -16,15 +17,23 @@ type DBConfig struct {
 	Password string
 }
 
-func BuildDBConfig() *DBConfig {
-	dbConfig := DBConfig{
+func SlotDBConfig() (*DBConfig, *DBConfig) {
+	slotDbConfig := DBConfig{
 		Host:     "localhost",
 		Port:     3306,
 		User:     "root",
 		Password: "12345678",
 		DBName:   "slot_booking_app",
 	}
-	return &dbConfig
+	fileDbConfig := DBConfig{
+		Host:     "localhost",
+		Port:     3306,
+		User:     "root",
+		Password: "12345678",
+		DBName:   "file_uploding_app",
+	}
+
+	return &slotDbConfig, &fileDbConfig
 }
 
 func DbUrl(db *DBConfig) string {

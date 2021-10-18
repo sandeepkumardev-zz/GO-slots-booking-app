@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"slot/models"
 	"slot/services"
-	"slot/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -47,12 +46,6 @@ func (EventController) CreateEvent(ctx *gin.Context) {
 
 	if inpErr := ctx.ShouldBind(&event); inpErr != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, "Invalid input provided")
-		return
-	}
-
-	//check duration limit
-	if err := utils.CreateValidator(&event); err != "" {
-		ctx.JSON(http.StatusUnprocessableEntity, err)
 		return
 	}
 
@@ -103,6 +96,18 @@ func (EventController) DeleteEvent(ctx *gin.Context) {
 	res, err := services.DeleteEvent(id, &event)
 	if err != "" {
 		ctx.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}
+
+func (EventController) UploadFile(ctx *gin.Context) {
+	id := ctx.Params[0].Value
+
+	res, err := services.UploadFile(id, ctx)
+	if err != "" {
+		ctx.JSON(http.StatusNotFound, err)
 		return
 	}
 

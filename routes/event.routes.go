@@ -21,5 +21,7 @@ func RouterSetup() *gin.Engine {
 	router.PUT("/event/:eventId", ctrl.EventController{}.UpdateEvent)
 	router.DELETE("/event/:eventId", ctrl.EventController{}.DeleteEvent)
 
+	router.POST("/upload/:eventId", ctrl.EventController{}.UploadFile)
+
 	return router
 }
