@@ -155,17 +155,12 @@ func DeleteEvent(id string, event *models.Event) (string, string) {
 	return "Deleted successfully.", ""
 }
 
-func UpdateEventUrl(id string, url string) string {
-	var event []*models.Event
-	event[0].EventId = id
-	event[0].FileUrl = url
-	result := config.SlotDB.Model(&event).Where("event_id = ?", id).Update(&event)
+func UpdateEventUrl(id string, url string) {
+	var events []*models.Event
+	config.SlotDB.Where("event_id = ?", id).First(&events)
 
-	if result.RowsAffected == 0 {
-		return "No events found with this id!"
-	}
-
-	return ""
+	events[0].FileUrl = url
+	config.SlotDB.Model(&events[0]).Where("event_id = ?", id).Update(&events[0])
 }
 
 func UploadFile(id string, ctx *gin.Context) (string, string) {
@@ -184,19 +179,15 @@ func UploadFile(id string, ctx *gin.Context) (string, string) {
 	}
 	defer file.Close()
 
-	fileName := utils.CreateFileName(handler.Filename)
-
-	go utils.UploadToCloud(file, fileName)
+	// upload the file, handler
+	go utils.UploadToCloud(file, handler.Filename)
 
 	select {
 	case err := <-utils.ErrChan:
 		return "", err
 	case url := <-utils.UrlChan:
-		err := UpdateEventUrl(id, url)
-		if err != "" {
-			return "", err
-		}
-
+		// update the File Url
+		UpdateEventUrl(id, url)
 		return "Successfully Uploaded File. " + url, ""
 	}
 }
