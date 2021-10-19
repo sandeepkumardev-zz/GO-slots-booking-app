@@ -102,8 +102,7 @@ func BookedSlots(timezone string) ([]Data, string) {
 }
 
 type Result struct {
-	Message  string `json:"message"`
-	Response string `json:"response"`
+	EventId string `json:"eventId"`
 }
 
 func CreateEvent(event *models.Event) (*Result, string) {
@@ -119,7 +118,7 @@ func CreateEvent(event *models.Event) (*Result, string) {
 		return nil, "Event creation failed!"
 	}
 
-	return &Result{Message: "Successfully created event.", Response: "Event Id: " + event.EventId}, ""
+	return &Result{EventId: event.EventId}, ""
 }
 
 func GetOneEvent(id string) (*gorm.DB, string) {
