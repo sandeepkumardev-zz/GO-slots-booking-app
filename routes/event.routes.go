@@ -11,7 +11,7 @@ func RouterSetup() *gin.Engine {
 	router := gin.Default()
 
 	router.GET("/", func(ctx *gin.Context) {
-		ctx.JSON(http.StatusOK, "Events booking app!")
+		ctx.String(http.StatusOK, "Events booking app!")
 	})
 
 	router.GET("/slots", ctrl.EventController{}.AvailableSlots)

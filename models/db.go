@@ -10,7 +10,7 @@ import (
 
 var err error
 
-func ConnectToDb() {
+func ConnectToDb() error {
 	slotConfig, fileConfig := config.SlotDBConfig()
 
 	config.SlotDB, err = gorm.Open("mysql", config.DbUrl(slotConfig))
@@ -18,11 +18,12 @@ func ConnectToDb() {
 
 	if err != nil {
 		fmt.Printf("Status: %v\n", err)
-		return
+		return err
 	}
 
 	config.SlotDB.AutoMigrate(&Event{})
 	config.FileDB.AutoMigrate(&File{})
 
 	fmt.Println("Database connected!")
+	return nil
 }

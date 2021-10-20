@@ -110,17 +110,17 @@ type CTdata struct {
 }
 
 func CreateEvent(event *models.Event) *Response {
-	//check event exists or not!
-	result := config.SlotDB.Where("date_time = ?", event.DateTime).First(&event)
-	if result.RowsAffected != 0 {
-		return &Response{Message: "Event already exists!", Data: nil, Success: false}
-	}
-
 	cnvtTimeZone, _ := utils.ConvertTimeString(event, config.TimeZone)
 	_, start_time := utils.SplitTime(cnvtTimeZone)
 
 	if !contains(config.TimeSlots, start_time) {
 		return &Response{Message: "Time is not suitable for Event Host.", Data: nil, Success: false}
+	}
+
+	//check event exists or not!
+	result := config.SlotDB.Where("date_time = ?", event.DateTime).First(&event)
+	if result.RowsAffected != 0 {
+		return &Response{Message: "Event already exists!", Data: nil, Success: false}
 	}
 
 	if err := config.SlotDB.Create(event).Error; err != nil {
