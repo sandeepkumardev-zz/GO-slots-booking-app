@@ -33,4 +33,5 @@ require (
 	github.com/gin-contrib/cors v1.3.1 // indirect
 	github.com/google/uuid v1.2.0 // indirect
 	github.com/gorilla/schema v1.2.0 // indirect
+	gopkg.in/go-playground/validator.v9 v9.31.0
 )
