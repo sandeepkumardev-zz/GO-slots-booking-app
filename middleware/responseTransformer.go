@@ -1,7 +1,7 @@
 package middleware
 
 type ResponseTransformer struct {
-	Message   string      `json:"message"`
-	Result    interface{} `json:"result"`
-	IsSuccess bool        `json:"isSuccess"`
+	Success bool        `json:"success"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
 }

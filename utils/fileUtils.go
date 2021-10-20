@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"mime/multipart"
+	cc "slot/config"
 	"strings"
 
 	"github.com/cloudinary/cloudinary-go"
@@ -21,7 +22,7 @@ func UploadToCloud(file multipart.File, Filename string) {
 	fileName := CreateFileName(Filename)
 	var ctx = context.Background()
 
-	cld, _ := cloudinary.NewFromParams("sandydev99", "917665392796572", "J6m152XVs7TyyfxJYn9oIHjPiGc")
+	cld, _ := cloudinary.NewFromParams(cc.CloudConfig.CloudName, cc.CloudConfig.ApiKey, cc.CloudConfig.ApiSecret)
 	resp, err := cld.Upload.Upload(ctx, file, uploader.UploadParams{PublicID: fileName})
 
 	if err != nil {

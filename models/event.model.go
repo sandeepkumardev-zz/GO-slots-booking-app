@@ -1,9 +1,9 @@
 package models
 
 type Event struct {
-	EventId  string `json:"eventid"`
+	ID       int    `gorm:"primaryKey"`
 	DateTime string `json:"datetime"`
-	Duration string `json:"duration"`
+	Duration int    `json:"duration"`
 	TimeZone string `json:"timezone"`
 	FileUrl  string `json:"fileurl"`
 }

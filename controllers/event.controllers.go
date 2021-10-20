@@ -5,6 +5,7 @@ import (
 	M "slot/middleware"
 	"slot/models"
 	"slot/services"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,13 +19,13 @@ func (EventController) AvailableSlots(ctx *gin.Context) {
 	}
 	ctx.ShouldBindJSON(&Query)
 
-	res, err := services.AvailableSlots(Query.Date, Query.TimeZone)
-	if err != "" {
-		ctx.JSON(http.StatusNotFound, &M.ResponseTransformer{Message: err, Result: nil, IsSuccess: false})
+	res := services.AvailableSlots(Query.Date, Query.TimeZone)
+	if !res.Success {
+		ctx.JSON(http.StatusBadRequest, &M.ResponseTransformer{Message: res.Message, Data: res.Data, Success: res.Success})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, &M.ResponseTransformer{Message: "Successfully fetched list of events.", Result: res, IsSuccess: true})
+	ctx.JSON(http.StatusOK, &M.ResponseTransformer{Message: res.Message, Data: res.Data, Success: res.Success})
 }
 
 func (EventController) BookedSlots(ctx *gin.Context) {
@@ -33,84 +34,85 @@ func (EventController) BookedSlots(ctx *gin.Context) {
 	}
 	ctx.ShouldBindJSON(&zone)
 
-	res, err := services.BookedSlots(zone.TimeZone)
-	if err != "" {
-		ctx.JSON(http.StatusNotFound, &M.ResponseTransformer{Message: err, Result: nil, IsSuccess: false})
+	res := services.BookedSlots(zone.TimeZone)
+	if !res.Success {
+		ctx.JSON(http.StatusBadRequest, &M.ResponseTransformer{Message: res.Message, Data: res.Data, Success: res.Success})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, &M.ResponseTransformer{Message: "Successfully fetched list of events.", Result: res, IsSuccess: true})
+	ctx.JSON(http.StatusOK, &M.ResponseTransformer{Message: res.Message, Data: res.Data, Success: res.Success})
 }
 
 func (EventController) CreateEvent(ctx *gin.Context) {
 	var event models.Event
 
 	if inpErr := ctx.ShouldBind(&event); inpErr != nil {
-		ctx.JSON(http.StatusUnprocessableEntity, &M.ResponseTransformer{Message: "Invalid input provided.", Result: nil, IsSuccess: false})
+		ctx.JSON(http.StatusUnprocessableEntity, &M.ResponseTransformer{Message: "Invalid input provided.", Data: nil, Success: false})
 		return
 	}
 
-	res, err := services.CreateEvent(&event)
-	if err != "" {
-		ctx.JSON(http.StatusBadRequest, &M.ResponseTransformer{Message: err, Result: nil, IsSuccess: false})
+	res := services.CreateEvent(&event)
+	if !res.Success {
+		ctx.JSON(http.StatusBadRequest, &M.ResponseTransformer{Message: res.Message, Data: res.Data, Success: res.Success})
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, &M.ResponseTransformer{Message: "Successfully created event.", Result: res, IsSuccess: true})
+	ctx.JSON(http.StatusCreated, &M.ResponseTransformer{Message: res.Message, Data: res.Data, Success: res.Success})
 }
 
 func (EventController) GetOneEvent(ctx *gin.Context) {
 	id := ctx.Params[0].Value
 
-	res, err := services.GetOneEvent(id)
-	if err != "" {
-		ctx.JSON(http.StatusBadRequest, &M.ResponseTransformer{Message: err, Result: nil, IsSuccess: false})
+	res := services.GetOneEvent(id)
+	if !res.Success {
+		ctx.JSON(http.StatusBadRequest, &M.ResponseTransformer{Message: res.Message, Data: res.Data, Success: res.Success})
 		return
 	}
 
-	ctx.JSON(http.StatusAccepted, &M.ResponseTransformer{Message: "Successfully fetched event.", Result: res.Value, IsSuccess: true})
+	ctx.JSON(http.StatusOK, &M.ResponseTransformer{Message: res.Message, Data: res.Data, Success: res.Success})
 }
 
 func (EventController) UpdateEvent(ctx *gin.Context) {
-	id := ctx.Params[0].Value
+	//convert params id to int
+	id, _ := strconv.Atoi(ctx.Params[0].Value)
 	var event models.Event
 
 	if inpErr := ctx.ShouldBindJSON(&event); inpErr != nil {
-		ctx.JSON(http.StatusUnprocessableEntity, &M.ResponseTransformer{Message: "Invalid input provided.", Result: nil, IsSuccess: false})
+		ctx.JSON(http.StatusUnprocessableEntity, &M.ResponseTransformer{Message: "Invalid input provided.", Data: nil, Success: false})
 		return
 	}
 
-	msg, err := services.UpdateEvent(id, &event)
+	res := services.UpdateEvent(id, &event)
 
-	if err != "" {
-		ctx.JSON(http.StatusBadRequest, &M.ResponseTransformer{Message: err, Result: nil, IsSuccess: false})
+	if !res.Success {
+		ctx.JSON(http.StatusBadRequest, &M.ResponseTransformer{Message: res.Message, Data: res.Data, Success: res.Success})
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, &M.ResponseTransformer{Message: msg, Result: nil, IsSuccess: true})
+	ctx.JSON(http.StatusCreated, &M.ResponseTransformer{Message: res.Message, Data: res.Data, Success: res.Success})
 }
 
 func (EventController) DeleteEvent(ctx *gin.Context) {
-	id := ctx.Params[0].Value
+	id, _ := strconv.Atoi(ctx.Params[0].Value)
 	var event models.Event
 
-	msg, err := services.DeleteEvent(id, &event)
-	if err != "" {
-		ctx.JSON(http.StatusBadRequest, &M.ResponseTransformer{Message: err, Result: nil, IsSuccess: false})
+	res := services.DeleteEvent(id, &event)
+	if !res.Success {
+		ctx.JSON(http.StatusBadRequest, &M.ResponseTransformer{Message: res.Message, Data: res.Data, Success: res.Success})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, &M.ResponseTransformer{Message: msg, Result: nil, IsSuccess: true})
+	ctx.JSON(http.StatusOK, &M.ResponseTransformer{Message: res.Message, Data: res.Data, Success: res.Success})
 }
 
 func (EventController) UploadFile(ctx *gin.Context) {
-	id := ctx.Params[0].Value
+	id, _ := strconv.Atoi(ctx.Params[0].Value)
 
-	msg, err := services.UploadFile(id, ctx)
-	if err != "" {
-		ctx.JSON(http.StatusNotFound, &M.ResponseTransformer{Message: err, Result: nil, IsSuccess: true})
+	res := services.UploadFile(id, ctx)
+	if !res.Success {
+		ctx.JSON(http.StatusBadRequest, &M.ResponseTransformer{Message: res.Message, Data: res.Data, Success: res.Success})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, &M.ResponseTransformer{Message: msg, Result: nil, IsSuccess: true})
+	ctx.JSON(http.StatusOK, &M.ResponseTransformer{Message: res.Message, Data: res.Data, Success: res.Success})
 }

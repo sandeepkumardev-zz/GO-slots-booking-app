@@ -4,12 +4,16 @@ import (
 	"slot/config"
 	"slot/models"
 	"slot/utils"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
 )
+
+type Response struct {
+	Success bool        `json:"success"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
+}
 
 type Data struct {
 	Date       string
@@ -33,13 +37,13 @@ func contains(s []string, str string) bool {
 	return false
 }
 
-func AvailableSlots(date string, timezone string) ([]AvlSlots, string) {
+func AvailableSlots(date string, timezone string) *Response {
 	var events []*models.Event
 
-	result := config.SlotDB.Order("event_id desc").Find(&events)
+	result := config.SlotDB.Order("id desc").Find(&events)
 
 	if result.Error != nil {
-		return nil, "Something went wrong!"
+		return &Response{Message: "Something went wrong!", Data: nil, Success: false}
 	}
 
 	var NewList []AvlSlots
@@ -51,7 +55,7 @@ func AvailableSlots(date string, timezone string) ([]AvlSlots, string) {
 		newDate, newTime := utils.SplitTime(cnvtTimeZone)
 
 		if newDate == date {
-			for _, slot := range utils.TimeSlots {
+			for _, slot := range config.TimeSlots {
 				if slot == newTime {
 					BookedSlot = append(BookedSlot, slot)
 				}
@@ -59,7 +63,7 @@ func AvailableSlots(date string, timezone string) ([]AvlSlots, string) {
 		}
 	}
 
-	for _, slot := range utils.TimeSlots {
+	for _, slot := range config.TimeSlots {
 		if contains(BookedSlot, slot) {
 			NewList = append(NewList, AvlSlots{slot, true})
 		} else {
@@ -67,20 +71,20 @@ func AvailableSlots(date string, timezone string) ([]AvlSlots, string) {
 		}
 	}
 
-	return NewList, ""
+	return &Response{Message: "Successfully fetched list of events.", Data: NewList, Success: true}
 }
 
-func BookedSlots(timezone string) ([]Data, string) {
+func BookedSlots(timezone string) *Response {
 	var events []*models.Event
 
-	result := config.SlotDB.Order("event_id desc").Find(&events)
+	result := config.SlotDB.Order("id desc").Find(&events)
 
 	if result.Error != nil {
-		return nil, "Something went wrong!"
+		return &Response{Message: "Something went wrong!", Data: nil, Success: false}
 	}
 
 	if result.RowsAffected == 0 {
-		return nil, "No Booked Slots Found!"
+		return &Response{Message: "No events found with this id!", Data: nil, Success: false}
 	}
 
 	// new slice for each event
@@ -98,83 +102,92 @@ func BookedSlots(timezone string) ([]Data, string) {
 		NewList = append(NewList, Data{date, start_time, end_time, timezone})
 	}
 
-	return NewList, ""
+	return &Response{Message: "Successfully fetched list of events.", Data: NewList, Success: true}
 }
 
-type Result struct {
-	EventId string `json:"eventId"`
+type CTdata struct {
+	EventId int `json:"eventId"`
 }
 
-func CreateEvent(event *models.Event) (*Result, string) {
-	event.EventId = strconv.FormatInt(int64(time.Now().Nanosecond()), 10)
-
+func CreateEvent(event *models.Event) *Response {
 	//check event exists or not!
 	result := config.SlotDB.Where("date_time = ?", event.DateTime).First(&event)
 	if result.RowsAffected != 0 {
-		return nil, "Event already exists!"
+		return &Response{Message: "Event already exists!", Data: nil, Success: false}
+	}
+
+	cnvtTimeZone, _ := utils.ConvertTimeString(event, config.TimeZone)
+	_, start_time := utils.SplitTime(cnvtTimeZone)
+
+	if !contains(config.TimeSlots, start_time) {
+		return &Response{Message: "Time is not suitable for Event Host.", Data: nil, Success: false}
 	}
 
 	if err := config.SlotDB.Create(event).Error; err != nil {
-		return nil, "Event creation failed!"
+		return &Response{Message: "Event creation failed!", Data: nil, Success: false}
 	}
 
-	return &Result{EventId: event.EventId}, ""
+	return &Response{Message: "Successfully created event.", Data: &CTdata{EventId: event.ID}, Success: true}
 }
 
-func GetOneEvent(id string) (*gorm.DB, string) {
+func GetOneEvent(id string) *Response {
 	var events []*models.Event
 
-	result := config.SlotDB.Where("event_id = ?", id).First(&events)
+	result := config.SlotDB.Where("id = ?", id).First(&events)
 
 	if result.RowsAffected == 0 {
-		return nil, "No events found with this id!"
+		return &Response{Message: "No events found with this id!", Data: nil, Success: false}
 	}
 
-	return result, ""
+	return &Response{Message: "Successfully fetched event.", Data: events, Success: true}
 }
 
-func UpdateEvent(id string, event *models.Event) (string, string) {
-	event.EventId = id
-	result := config.SlotDB.Model(&event).Where("event_id = ?", id).Update(&event)
+func UpdateEvent(id int, event *models.Event) *Response {
+	event.ID = id
+	result := config.SlotDB.Model(&event).Where("id = ?", id).Update(&event)
 
 	if result.RowsAffected == 0 {
-		return "", "No events found with this id!"
+		return &Response{Message: "No events found with this id!", Data: nil, Success: false}
 	}
 
-	return "Update successfully.", ""
+	return &Response{Message: "Update successfully.", Data: nil, Success: true}
 }
 
-func DeleteEvent(id string, event *models.Event) (string, string) {
-	result := config.SlotDB.Where("event_id = ?", id).Delete(&event)
+func DeleteEvent(id int, event *models.Event) *Response {
+	result := config.SlotDB.Where("id = ?", id).Delete(&event)
 
 	if result.RowsAffected == 0 {
-		return "", "No events found with this id!"
+		return &Response{Message: "No events found with this id!", Data: nil, Success: false}
 	}
 
-	return "Deleted successfully.", ""
+	return &Response{Message: "Deleted successfully.", Data: nil, Success: true}
 }
 
-func UpdateEventUrl(id string, url string) {
+func UpdateEventUrl(id int, url string) {
 	var events []*models.Event
-	config.SlotDB.Where("event_id = ?", id).First(&events)
+	config.SlotDB.Where("id = ?", id).First(&events)
 
 	events[0].FileUrl = url
-	config.SlotDB.Model(&events[0]).Where("event_id = ?", id).Update(&events[0])
+	config.SlotDB.Model(&events[0]).Where("id = ?", id).Update(&events[0])
 }
 
-func UploadFile(id string, ctx *gin.Context) (string, string) {
+type FileResult struct {
+	Url string `json:"url"`
+}
+
+func UploadFile(id int, ctx *gin.Context) *Response {
 	var event []*models.Event
 
-	result := config.SlotDB.Where("event_id = ?", id).First(&event)
+	result := config.SlotDB.Where("id = ?", id).First(&event)
 
 	if result.RowsAffected == 0 {
-		return "", "No events found with this id!"
+		return &Response{Message: "No events found with this id!", Data: nil, Success: false}
 	}
 
 	file, handler, fileErr := ctx.Request.FormFile("myFile")
 
 	if fileErr != nil {
-		return "", "Error Retrieving the File"
+		return &Response{Message: fileErr.Error(), Data: nil, Success: false}
 	}
 	defer file.Close()
 
@@ -183,10 +196,10 @@ func UploadFile(id string, ctx *gin.Context) (string, string) {
 
 	select {
 	case err := <-utils.ErrChan:
-		return "", err
+		return &Response{Message: err, Data: nil, Success: false}
 	case url := <-utils.UrlChan:
 		// update the File Url
 		UpdateEventUrl(id, url)
-		return "Successfully Uploaded File. " + url, ""
+		return &Response{Message: "Successfully Uploaded File.", Data: &FileResult{Url: url}, Success: true}
 	}
 }
