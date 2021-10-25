@@ -38,7 +38,7 @@ func (Validation) IsValid(event *models.Event) []string {
 	}
 
 	_ = v.RegisterTranslation("required", trans, func(ut ut.Translator) error {
-		return ut.Add("required", "{0} is a required field", true) // see universal-translator for details
+		return ut.Add("required", "{0} is a required field", true)
 	}, func(ut ut.Translator, fe validator.FieldError) string {
 		t, _ := ut.T("required", fe.Field())
 		return t
@@ -46,7 +46,7 @@ func (Validation) IsValid(event *models.Event) []string {
 
 	// DateTime
 	_ = v.RegisterTranslation("datetime", trans, func(ut ut.Translator) error {
-		return ut.Add("datetime", "{0} is not valid!", true) // see universal-translator for details
+		return ut.Add("datetime", "{0} is not valid!", true)
 	}, func(ut ut.Translator, fe validator.FieldError) string {
 		t, _ := ut.T("datetime", fe.Field())
 		return t
@@ -59,7 +59,7 @@ func (Validation) IsValid(event *models.Event) []string {
 
 	//Duration
 	_ = v.RegisterTranslation("duration", trans, func(ut ut.Translator) error {
-		return ut.Add("duration", "{0} must be 30 minutes", true) // see universal-translator for details
+		return ut.Add("duration", "{0} must be 30 minutes", true)
 	}, func(ut ut.Translator, fe validator.FieldError) string {
 		t, _ := ut.T("duration", fe.Field())
 		return t
@@ -70,7 +70,7 @@ func (Validation) IsValid(event *models.Event) []string {
 
 	// Timezone
 	_ = v.RegisterTranslation("timezone", trans, func(ut ut.Translator) error {
-		return ut.Add("timezone", "{0} is not valid!", true) // see universal-translator for details
+		return ut.Add("timezone", "{0} is not valid!", true)
 	}, func(ut ut.Translator, fe validator.FieldError) string {
 		t, _ := ut.T("timezone", fe.Field())
 		return t

@@ -11,10 +11,10 @@ import (
 var err error
 
 func ConnectToDb() error {
-	slotConfig, fileConfig := config.SlotDBConfig()
+	slotConfig, userConfig := config.SlotDBConfig()
 
 	config.SlotDB, err = gorm.Open("mysql", config.DbUrl(slotConfig))
-	config.FileDB, err = gorm.Open("mysql", config.DbUrl(fileConfig))
+	config.UserDB, err = gorm.Open("mysql", config.DbUrl(userConfig))
 
 	if err != nil {
 		fmt.Printf("Status: %v\n", err)
@@ -22,7 +22,9 @@ func ConnectToDb() error {
 	}
 
 	config.SlotDB.AutoMigrate(&Event{})
-	config.FileDB.AutoMigrate(&File{})
+	config.SlotDB.AutoMigrate(&File{})
+	//2nd db
+	config.UserDB.AutoMigrate(&User{})
 
 	fmt.Println("Database connected!")
 	return nil

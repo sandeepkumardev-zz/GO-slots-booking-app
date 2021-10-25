@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"slot/config"
 	"slot/models"
 	"slot/utils"
@@ -93,7 +94,6 @@ func BookedSlots(timezone string) *Response {
 	for _, event := range events {
 		// convert time string with user timezone
 		cnvtTimeZone, timeFormat := utils.ConvertTimeString(event, timezone)
-		// duration, _ := strconv.ParseInt(event.Duration, 10, 0)
 		addDurationTimeZone := timeFormat.Add(time.Minute * 30).Format(time.RFC3339)
 
 		date, start_time := utils.SplitTime(cnvtTimeZone)
@@ -130,16 +130,20 @@ func CreateEvent(event *models.Event) *Response {
 	return &Response{Message: "Successfully created event.", Data: &CTdata{EventId: event.ID}, Success: true}
 }
 
+type ResultWithFile struct {
+	Event interface{} `json:"event"`
+	Files interface{} `json:"files"`
+}
+
 func GetOneEvent(id string) *Response {
 	var events []*models.Event
 
-	result := config.SlotDB.Where("id = ?", id).First(&events)
-
+	result := config.SlotDB.Preload("Files").Where("id = ?", id).First(&events)
 	if result.RowsAffected == 0 {
 		return &Response{Message: "No events found with this id!", Data: nil, Success: false}
 	}
 
-	return &Response{Message: "Successfully fetched event.", Data: events, Success: true}
+	return &Response{Message: "Successfully fetched event.", Data: events[0], Success: true}
 }
 
 func UpdateEvent(id int, event *models.Event) *Response {
@@ -163,12 +167,18 @@ func DeleteEvent(id int, event *models.Event) *Response {
 	return &Response{Message: "Deleted successfully.", Data: nil, Success: true}
 }
 
-func UpdateEventUrl(id int, url string) {
-	var events []*models.Event
-	config.SlotDB.Where("id = ?", id).First(&events)
+func UpdateEventUrl(id int, url string) error {
+	var file models.File
 
-	events[0].FileUrl = url
-	config.SlotDB.Model(&events[0]).Where("id = ?", id).Update(&events[0])
+	file.EventId = id
+	file.FileUrl = url
+
+	if err := config.SlotDB.Create(&file).Error; err != nil {
+		return err
+	}
+
+	fmt.Println(file)
+	return nil
 }
 
 type FileResult struct {
@@ -176,7 +186,7 @@ type FileResult struct {
 }
 
 func UploadFile(id int, ctx *gin.Context) *Response {
-	var event []*models.Event
+	var event models.Event
 
 	result := config.SlotDB.Where("id = ?", id).First(&event)
 
@@ -199,7 +209,10 @@ func UploadFile(id int, ctx *gin.Context) *Response {
 		return &Response{Message: err, Data: nil, Success: false}
 	case url := <-utils.UrlChan:
 		// update the File Url
-		UpdateEventUrl(id, url)
+		err := UpdateEventUrl(id, url)
+		if err != nil {
+			return &Response{Message: err.Error(), Data: nil, Success: false}
+		}
 		return &Response{Message: "Successfully Uploaded File.", Data: &FileResult{Url: url}, Success: true}
 	}
 }

@@ -7,7 +7,7 @@ import (
 )
 
 var SlotDB *gorm.DB
-var FileDB *gorm.DB
+var UserDB *gorm.DB
 
 type DBConfig struct {
 	Host     string
@@ -25,15 +25,15 @@ func SlotDBConfig() (*DBConfig, *DBConfig) {
 		Password: "12345678",
 		DBName:   "slot_booking_app",
 	}
-	fileDbConfig := DBConfig{
+	userDbConfig := DBConfig{
 		Host:     "localhost",
 		Port:     3306,
 		User:     "root",
 		Password: "12345678",
-		DBName:   "file_uploding_app",
+		DBName:   "users_db",
 	}
 
-	return &slotDbConfig, &fileDbConfig
+	return &slotDbConfig, &userDbConfig
 }
 
 func DbUrl(db *DBConfig) string {

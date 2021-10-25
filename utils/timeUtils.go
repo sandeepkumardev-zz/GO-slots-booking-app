@@ -27,6 +27,7 @@ func SplitDate(dateTime string) []string {
 }
 
 //  00:30 - 07:30
+// int, _ := strconv.ParseInt("10")
 
 func ConvertTimeString(event *models.Event, timezone string) (string, time.Time) {
 	str := "2006-01-02 15:04"
