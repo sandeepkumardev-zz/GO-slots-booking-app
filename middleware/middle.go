@@ -1,19 +1,16 @@
 package middleware
 
 import (
-	"bytes"
-	"fmt"
 	"io"
+	"net/http"
+	"strconv"
 
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
-
-	limiter "github.com/ulule/limiter/v3"
-	mgin "github.com/ulule/limiter/v3/drivers/middleware/gin"
-	"github.com/ulule/limiter/v3/drivers/store/memory"
 )
 
 var LogMiddleware = logger.SetLogger(
@@ -26,35 +23,20 @@ var LogMiddleware = logger.SetLogger(
 	}),
 )
 
-func RateLimit() gin.HandlerFunc {
-	rate, err := limiter.NewRateFromFormatted("2-H")
-	if err != nil {
-		panic(err)
+func EnsureLoggedIn() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		getInfo := c.Request.Header["Authorization"][0]
+		loggedIn, _ := strconv.ParseBool(getInfo)
+		if !loggedIn {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, &ResponseTransformer{Message: "User is not logged in!", Data: nil, Success: false})
+		}
+		c.Next()
 	}
-
-	store := memory.NewStore()
-
-	middleware := mgin.NewMiddleware(limiter.New(store, rate))
-
-	return middleware
 }
 
-type bodyLogWriter struct {
-	gin.ResponseWriter
-	body *bytes.Buffer
-}
-
-func (w bodyLogWriter) Write(b []byte) (int, error) {
-	w.body.Write(b)
-	return w.ResponseWriter.Write(b)
-}
-
-func LimitExceed(c *gin.Context) {
-	blw := &bodyLogWriter{body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
-	c.Writer = blw
-	c.Next()
-	statusCode := c.Writer.Status()
-	if statusCode >= 429 {
-		fmt.Println("Over")
-	}
+func Cors() gin.HandlerFunc {
+	config := cors.DefaultConfig()
+	config.AllowOrigins = []string{"http://localhost:3000"}
+	config.MaxAge = 12 * time.Hour
+	return cors.New(config)
 }

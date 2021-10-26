@@ -15,10 +15,7 @@ func CreateFileName(filename string) string {
 	return newFile[0]
 }
 
-var UrlChan = make(chan string)
-var ErrChan = make(chan string)
-
-func UploadToCloud(file multipart.File, Filename string) {
+func UploadToCloud(file multipart.File, Filename string, UrlChan chan string, ErrChan chan string) {
 	fileName := CreateFileName(Filename)
 	var ctx = context.Background()
 

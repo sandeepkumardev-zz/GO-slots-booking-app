@@ -35,7 +35,12 @@ func (EventController) BookedSlots(ctx *gin.Context) {
 	}
 	ctx.ShouldBindJSON(&zone)
 
-	res := services.BookedSlots(zone.TimeZone)
+	pageNo, err := strconv.Atoi(ctx.Request.URL.Query().Get("pageNo"))
+	if err != nil || pageNo < 1 {
+		pageNo = 1
+	}
+
+	res := services.BookedSlots(zone.TimeZone, pageNo)
 	if !res.Success {
 		ctx.JSON(http.StatusBadRequest, &M.ResponseTransformer{Message: res.Message, Data: res.Data, Success: res.Success})
 		return

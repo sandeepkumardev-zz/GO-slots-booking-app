@@ -75,10 +75,12 @@ func AvailableSlots(date string, timezone string) *Response {
 	return &Response{Message: "Successfully fetched list of events.", Data: NewList, Success: true}
 }
 
-func BookedSlots(timezone string) *Response {
+func BookedSlots(timezone string, pageNo int) *Response {
 	var events []*models.Event
 
-	result := config.SlotDB.Order("id desc").Find(&events)
+	var limit = 5
+	var offset = (pageNo - 1) * limit
+	result := config.SlotDB.Order("date_time desc").Limit(limit).Offset(offset).Find(&events)
 
 	if result.Error != nil {
 		return &Response{Message: "Something went wrong!", Data: nil, Success: false}
@@ -201,13 +203,16 @@ func UploadFile(id int, ctx *gin.Context) *Response {
 	}
 	defer file.Close()
 
+	var UrlChan = make(chan string)
+	var ErrChan = make(chan string)
+
 	// upload the file, handler
-	go utils.UploadToCloud(file, handler.Filename)
+	go utils.UploadToCloud(file, handler.Filename, UrlChan, ErrChan)
 
 	select {
-	case err := <-utils.ErrChan:
+	case err := <-ErrChan:
 		return &Response{Message: err, Data: nil, Success: false}
-	case url := <-utils.UrlChan:
+	case url := <-UrlChan:
 		// update the File Url
 		err := UpdateEventUrl(id, url)
 		if err != nil {

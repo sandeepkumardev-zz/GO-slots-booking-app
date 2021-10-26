@@ -59,6 +59,8 @@ require (
 )
 
 require (
+	github.com/Salvatore-Giordano/gin-redis-ip-limiter v0.0.0-20180421093006-409a923d7aa8
+	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/ulule/limiter v2.2.2+incompatible
 )
